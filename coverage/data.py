@@ -281,7 +281,6 @@ class CoverageData(object):
             )
         self._file_tracers = data.get('file_tracers', {})
         self._runs = data.get('runs', [])
-
         self._validate()
 
     def read_file(self, filename):

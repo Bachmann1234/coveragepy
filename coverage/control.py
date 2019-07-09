@@ -26,6 +26,7 @@ from coverage.files import PathAliases, find_python_files, prep_patterns
 from coverage.files import canonical_filename, set_relative_directory
 from coverage.files import ModuleMatcher, abs_file
 from coverage.html import HtmlReporter
+from coverage.jsonreport import JsonReporter
 from coverage.misc import CoverageException, bool_or_none, join_regex
 from coverage.misc import file_be_gone, isolate_module
 from coverage.plugin import FileReporter
@@ -1115,26 +1116,49 @@ class Coverage(object):
             ignore_errors=ignore_errors, report_omit=omit, report_include=include,
             xml_output=outfile,
             )
+        return self._render_report(self.config.xml_output, XmlReporter(self, self.config), morfs)
+
+    def json_report(
+        self, morfs=None, outfile=None, ignore_errors=None,
+        omit=None, include=None, contexts=None,
+    ):
+        """Generate an JSON report of coverage results.
+
+        Each module in `morfs` is included in the report.  `outfile` is the
+        path to write the file to, "-" will write to stdout.
+
+        See :meth:`report` for other arguments.
+
+        Returns a float, the total percentage covered.
+
+        """
+        self.config.from_args(
+            ignore_errors=ignore_errors, report_omit=omit, report_include=include,
+            json_output=outfile, report_contexts=contexts,
+        )
+        return self._render_report(self.config.json_output, JsonReporter(self, self.config), morfs)
+
+    @staticmethod
+    def _render_report(output_path, reporter, morfs):
         file_to_close = None
         delete_file = False
-        if self.config.xml_output:
-            if self.config.xml_output == '-':
+        if output_path:
+            if output_path == '-':
                 outfile = sys.stdout
             else:
                 # Ensure that the output directory is created; done here
                 # because this report pre-opens the output file.
                 # HTMLReport does this using the Report plumbing because
                 # its task is more complex, being multiple files.
-                output_dir = os.path.dirname(self.config.xml_output)
+                output_dir = os.path.dirname(output_path)
                 if output_dir and not os.path.isdir(output_dir):
                     os.makedirs(output_dir)
                 open_kwargs = {}
                 if env.PY3:
                     open_kwargs['encoding'] = 'utf8'
-                outfile = open(self.config.xml_output, "w", **open_kwargs)
+                outfile = open(output_path, "w", **open_kwargs)
                 file_to_close = outfile
         try:
-            reporter = XmlReporter(self, self.config)
             return reporter.report(morfs, outfile=outfile)
         except CoverageException:
             delete_file = True
@@ -1143,7 +1167,7 @@ class Coverage(object):
             if file_to_close:
                 file_to_close.close()
                 if delete_file:
-                    file_be_gone(self.config.xml_output)
+                    file_be_gone(output_path)
 
     def sys_info(self):
         """Return a list of (key, value) pairs showing internal information."""

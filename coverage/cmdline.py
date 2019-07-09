@@ -98,6 +98,11 @@ class Opts(object):
         metavar="OUTFILE",
         help="Write the XML report to this file. Defaults to 'coverage.xml'",
     )
+    output_json = optparse.make_option(
+        '-o', '', action='store', dest="outfile",
+        metavar="OUTFILE",
+        help="Write the JSON report to this file. Defaults to 'coverage.json'",
+    )
     parallel_mode = optparse.make_option(
         '-p', '--parallel-mode', action='store_true',
         help=(
@@ -377,6 +382,19 @@ CMDS = {
         usage="[options] [modules]",
         description="Generate an XML report of coverage results."
     ),
+
+    'json': CmdOptionParser(
+        "json",
+        [
+            Opts.fail_under,
+            Opts.ignore_errors,
+            Opts.include,
+            Opts.omit,
+            Opts.output_json,
+            ] + GLOBAL_ARGS,
+        usage="[options] [modules]",
+        description="Generate an JSON report of coverage results."
+    ),
 }
 
 
@@ -520,6 +538,9 @@ class CoverageScript(object):
         elif options.action == "xml":
             outfile = options.outfile
             total = self.coverage.xml_report(outfile=outfile, **report_args)
+        elif options.action == "json":
+            outfile = options.outfile
+            total = self.coverage.json_report(outfile=outfile, **report_args)
 
         if total is not None:
             # Apply the command line fail-under options, and then use the config
@@ -725,6 +746,7 @@ HELP_TOPICS = {
             report      Report coverage stats on modules.
             run         Run a Python program and measure code execution.
             xml         Create an XML report of coverage results.
+            json        Create a JSON report of coverage results.
 
         Use "{program_name} help <command>" for detailed help on any command.
         For full documentation, see {__url__}
