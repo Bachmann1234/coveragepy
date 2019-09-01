@@ -102,6 +102,16 @@ CREATE TABLE tracer (
     tracer text,
     foreign key (file_id) references file (id)
 );
+
+CREATE VIEW line (file_id, context_id, lineno) 
+AS 
+  SELECT file_id, context_id, fromno 
+  FROM   arc 
+  WHERE  fromno > 0 
+  UNION 
+  SELECT file_id, context_id, tono 
+  FROM   arc 
+  WHERE  tono > 0; 
 """
 
 class CoverageData(SimpleReprMixin):
